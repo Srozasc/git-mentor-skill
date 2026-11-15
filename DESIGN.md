@@ -27,9 +27,11 @@ Con dos perfiles completos, la skill se divide en **núcleo + referencias por pe
 ```text
 D:\desarrollo\skills\git-mentor\
 ├── SKILL.md                     # núcleo: activación, selección de perfil y flujo, formato de plan,
-│                                #   reglas comunes, acciones bloqueantes, reglas de oro
+│                                #   guardia determinista de .gitignore, acciones bloqueantes, reglas de oro
 ├── DESIGN.md                    # este documento de diseño
 └── references/
+    ├── audit.gitignore          # diccionario estático de patrones prohibidos/basura para git check-ignore y ls-files
+    ├── gitignore.md             # bloques base por stack, porqués didácticos y flujo de plan para .gitignore
     ├── profile-solo.md          # contenido de solo-freelancer + anti-huérfanos + PR solo
     ├── profile-team.md          # reglas comunes del modo equipo (juniors)
     ├── flow-develop.md          # flujo con rama develop (PRs a develop, release a main)
@@ -45,6 +47,7 @@ flowchart LR
     P -->|team| PT["references/profile-team.md"]
     PT -->|flow: develop| FD["references/flow-develop.md"]
     PT -->|flow: direct| FM["references/flow-main.md"]
+    S -.->|"si git check-ignore / ls-files detecta hallazgos"| GI["references/gitignore.md + audit.gitignore"]
     S -.->|"si hay que recuperar commits"| R["references/recovery.md"]
     S -.->|"si el usuario pregunta qué es X"| G["references/glossary.md"]
 ```
@@ -162,6 +165,29 @@ sequenceDiagram
     A->>Dev: Resumen + siguiente paso sugerido
 ```
 
+### 3.5 Guardia determinista de `.gitignore` (D7)
+
+Cada vez que el agente ejecuta `git status` o prepara un `git commit`, evalúa el estado de exclusión de archivos mediante el motor nativo en C de Git contra el diccionario estático `references/audit.gitignore` (cero dependencias externas, 100% multiplataforma):
+
+```bash
+# 1. Untracked sospechosos en disco según el diccionario estático (sin pipe, multiplataforma)
+git ls-files --others --ignored --exclude-from="<skill>/references/audit.gitignore" --directory
+
+# 2. Archivos ya trackeados en el índice que violan .gitignore o audit.gitignore
+git ls-files --cached --ignored --exclude-standard --exclude-from="<skill>/references/audit.gitignore"
+
+# 3. Solo si (1) devolvió rutas y existe .gitignore: filtrar cuáles siguen expuestas (líneas que empiezan con `::`)
+git check-ignore -n -v -- <rutas-de-1>
+```
+
+- **Carga bajo demanda**: si ambos comandos devuelven vacío y existe `.gitignore` en la raíz del repositorio, no se carga `references/gitignore.md`. Solo ante hallazgos (o ausencia de `.gitignore` cuando hay archivos para ignorar) el agente lee `references/gitignore.md`.
+- **Alcance híbrido**:
+  - **Sin `.gitignore` en el repo**: detecta el stack por archivos marcadores en la raíz (`package.json`, `tsconfig.json`, `pyproject.toml`, `*.csproj`, `go.mod`, `Cargo.toml`) y propone crear `.gitignore` combinando los bloques literales `Base (OS + IDE + Secretos)` + `Stack detectado` + patrones detectados.
+  - **Con `.gitignore` existente**: agrega quirúrgicamente al final únicamente los patrones reportados por `git check-ignore`.
+  - **Archivos ya trackeados (`--cached`)**: incorpora `git rm --cached <archivo>` (o `-r` para directorios) como paso previo dentro del mismo plan actual.
+- **Integración en el plan actual**: la creación/actualización de `.gitignore` y el eventual `git rm --cached` se incluyen como primeros pasos del mismo plan que pidió el usuario, sumando `.gitignore` al commit en curso.
+- **Alerta de secretos en el historial**: si un archivo detectado en `--cached` pertenece a `# [SECRETS]` y ya figura en commits previos (`git log -1 -- <archivo>`), el agente advierte explícitamente que `git rm --cached` no borra el historial pasado y que la credencial debe rotarse/revocarse de inmediato.
+
 ---
 
 ## 4. Perfiles
@@ -252,6 +278,7 @@ notes: []
 | D4 | En `team`, ¿el junior puede hacer `push --force-with-lease` sobre su propia rama tras rebase? | **Decidido (2026-11-13): sí, con controles** (solo rama propia `feat/`/`fix/`/`chore/`, nunca `main`, nunca `--force`, OK aparte con advertencia completa; ver 4.3). |
 | D5 | ¿El agente puede abrir el PR, o solo prepara título y descripción y el junior lo abre? | **Decidido (2026-11-13): el agente lo abre tras confirmación** del título y la descripción; nunca mergea. |
 | D6 | ¿El repositorio en modo equipo usa rama `develop` o trabaja directo a `main`? | **Decidido (2026-11-13): se pregunta en la activación**, después de confirmar que es un proyecto de equipo. Opciones: `develop` (PRs a `develop`, release a `main` con squash, back-port de hotfix) o `direct` (PRs directo a `main`). Se persiste como `flow` en la memoria del proyecto. |
+| D7 | ¿Cómo asiste la skill con `.gitignore` sin depender de lo que "vea a ojo" cada LLM ni de runtimes externos? | **Decidido (2026-11-14): guardia determinista en `git status` / pre-commit usando el motor nativo de Git (`git ls-files` + `git check-ignore`) contra `references/audit.gitignore` + guía bajo demanda `references/gitignore.md`.** Alcance híbrido (plantilla por stack si no existe `.gitignore`; adición quirúrgica si ya existe) e integración de `.gitignore` + `git rm --cached` dentro del mismo plan actual. |
 
 ### 6.1 Flujos disponibles en modo `team` (D6)
 
