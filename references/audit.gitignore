@@ -1,0 +1,65 @@
+# Diccionario estatico de auditoria para git-mentor
+# Evaluado en C por `git check-ignore` y `git ls-files` (no editar con reglas especificas de un solo repo).
+
+# [SECRETS]
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+secrets.*
+credentials*.json
+service-account*.json
+
+# [DEPS]
+node_modules/
+.pnpm-store/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# [BUILD]
+dist/
+build/
+out/
+target/
+obj/
+.next/
+.nuxt/
+.output/
+.turbo/
+.cache/
+coverage/
+*.tsbuildinfo
+*.tar.gz
+
+# [OS_IDE]
+.DS_Store
+Thumbs.db
+desktop.ini
+nul
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# [LOGS_TMP]
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.bak

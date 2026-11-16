@@ -24,3 +24,5 @@
 - **rama de integración (`develop`)**: rama donde se acumulan los cambios ya revisados de varias features, antes de liberar una versión a `main`. Conserva la historia granular de los commits, que el squash de `main` colapsa.
 - **release**: publicación de una versión desde la rama de integración hacia `main`, con squash para que `main` muestre un commit por versión.
 - **back-port**: aplicar a la rama de integración un commit que ya se liberó en `main` (por ejemplo, un hotfix de producción), para que el próximo release no lo revierta.
+- **`.gitignore`**: archivo de reglas en la raíz del proyecto que le dice a Git qué archivos o carpetas locales (como `.env`, `node_modules/` o `dist/`) debe ignorar por completo. Solo afecta a archivos que todavía no fueron trackeados.
+- **`git rm --cached`**: saca un archivo del seguimiento de Git (del índice y de los próximos commits) **sin borrarlo de tu disco local**. Es el paso obligatorio cuando un archivo fue commiteado o stageado antes de agregarlo al `.gitignore`.

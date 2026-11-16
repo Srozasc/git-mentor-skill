@@ -132,6 +132,13 @@ Plan:
 - **CERO `Co-Authored-By`**: jamás agregar trailers de atribución de IA. Regla absoluta.
 - **Idioma del commit**: inglés por defecto (`en`), salvo que la memoria del proyecto indique `es`.
 - **Check pre-commit automático**: bloquear subjects vagos (`fix` sin scope, `update`, `WIP`, `cambios`, `more`, `actualizar`, `tmp`, `debug`) y proponer un mensaje concreto con scope deducido del diff.
+- **Guardia determinista de `.gitignore`** (en cada `git status` y antes de `git commit`, solo lectura):
+  ```bash
+  git ls-files --others --ignored --exclude-from="<skill>/references/audit.gitignore" --directory
+  git ls-files --cached --ignored --exclude-standard --exclude-from="<skill>/references/audit.gitignore"
+  ```
+  *(Si el primer comando devuelve rutas y ya existe `.gitignore`, filtrar cuáles siguen expuestas con `git check-ignore -n -v -- <rutas>` — las líneas con `::` están expuestas).*
+  Si alguno devuelve hallazgos (o falta `.gitignore` y hay archivos para ignorar), leer `references/gitignore.md` e integrar la corrección (más `git rm --cached` si corresponde) al inicio del mismo plan.
 - **No avanzar con ambigüedad**: si hay cambios sueltos al cambiar de rama, conflictos o archivos untracked sospechosos, parar, explicar en claro y proponer solución antes de ejecutar.
 
 ---
@@ -140,10 +147,10 @@ Plan:
 
 | Acción | Comportamiento esperado |
 |---|---|
-| `git status` | Resumir en español claro sin volcar output crudo innecesario. Advertir riesgos si hay cambios sueltos. |
+| `git status` | Resumir en español claro sin volcar output crudo innecesario. Correr la guardia determinista de `.gitignore` y advertir si hay archivos expuestos, basura o secretos trackeados. |
 | `git diff` | Explicar qué cambió funcionalmente; mostrar líneas crudas solo si se piden. |
 | `git log` | Resumir historia reciente de forma legible. |
-| `git commit` | Validar las 4 preguntas pre-commit y palabras bloqueadas, proponer mensaje Conventional Commit, incluir en el plan y ejecutar tras OK. |
+| `git commit` | Correr la guardia determinista de `.gitignore` (si hay hallazgos, incluirlos en el plan según `references/gitignore.md`), validar las 4 preguntas pre-commit y palabras bloqueadas, proponer mensaje Conventional Commit, incluir en el plan y ejecutar tras OK. |
 | `git stash` | Sugerir nombre descriptivo (`git stash push -m "..."`) cuando haya que limpiar el working tree temporalmente. |
 | `git switch / checkout` | Verificar working tree limpio antes de cambiar; sugerir `stash` si hay cambios locales. |
 | `git branch` | En `solo`: trabajar sobre `work_branch` sin abrir ramas extra. En `team`: crear `feat/<slug>`, `fix/<slug>` o `chore/<slug>` desde `origin/{develop|main}` según el flujo activo. |
@@ -192,6 +199,8 @@ Leer únicamente cuando la tarea lo requiera:
 - `references/profile-team.md` — Reglas comunes del modo equipo para devs juniors.
 - `references/flow-develop.md` — Flujo con rama `develop` (PRs a `develop`, release a `main` con squash, hotfix con back-port). Leer solo si `flow: develop`.
 - `references/flow-main.md` — Flujo directo a `main` (PRs a `main` con squash). Leer solo si `flow: direct`.
+- `references/gitignore.md` — Guía híbrida para crear/editar `.gitignore`, bloques literales por stack, `git rm --cached` y alerta de secretos. Leer solo cuando la guardia determinista detecte hallazgos.
+- `references/audit.gitignore` — Diccionario estático evaluado por Git (`git ls-files`); no leer en crudo como contexto salvo para auditar o extender reglas.
 - `references/recovery.md` — Guía para recuperar commits o ramas perdidas con `reflog` / `cherry-pick`.
 - `references/glossary.md` — Glosario didáctico con ejemplos para responder dudas conceptuales.
 
